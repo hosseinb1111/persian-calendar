@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>تقویم شمسی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f0e8;
+    --card: #ffffff;
+    --text: #242424;
+    --muted: #7d766d;
+    --accent: #2e7d5b;
+    --accent-soft: #dcefe5;
+    --border: #e7e0d4;
+    --holiday: #c0392b;
+    --holiday-soft: #fbe5e1;
+    --cultural: #b07d1c;
+    --shadow: 0 12px 34px rgba(0, 0, 0, 0.08);
+  }
+  [data-theme="dark"] {
+    --bg: #111513;
+    --card: #1b211e;
+    --text: #e6ece8;
+    --muted: #8c998f;
+    --accent: #5fd19b;
+    --accent-soft: #22362c;
+    --border: #2b3530;
+    --holiday: #ff8a7a;
+    --holiday-soft: #3a2420;
+    --cultural: #e8b44a;
+    --shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+    transition: background 0.3s, color 0.3s;
+  }
+  .card {
+    background: var(--card);
+    width: min(440px, 100%);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .title { text-align: center; }
+  .title .month { font-size: 1.25rem; font-weight: 700; }
+  .title .year { font-size: 0.9rem; color: var(--muted); margin-top: 2px; }
+  .nav {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .nav svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .nav:hover { filter: brightness(0.95); }
+  .nav:focus-visible, .btn:focus-visible, .cell:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .weekdays, .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+  .weekdays { margin: 18px 0 6px; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+  .weekdays .fri { color: var(--holiday); }
+  .cell {
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 1rem;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
+  }
+  .cell:hover { border-color: var(--border); }
+  .cell.empty { visibility: hidden; }
+  .cell.fri { color: var(--holiday); }
+  .cell.holiday { background: var(--holiday-soft); color: var(--holiday); font-weight: 600; }
+  .cell.fri.holiday { color: var(--holiday); }
+  .cell.cultural::after {
+    content: "";
+    position: absolute;
+    bottom: 5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--cultural);
+  }
+  .cell.today { background: var(--accent); color: #fff; font-weight: 700; }
+  .cell.selected { border: 2px solid var(--accent); }
+  .cell.today.holiday { background: var(--holiday); color: #fff; }
+
+  .details {
+    margin-top: 18px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    min-height: 92px;
+  }
+  .details .date { font-weight: 700; margin-bottom: 4px; }
+  .details .greg { color: var(--muted); font-size: 0.85rem; margin-bottom: 8px; }
+  .event { font-size: 0.92rem; line-height: 1.8; margin: 4px 0; padding-right: 10px; border-right: 3px solid var(--cultural); }
+  .event.holiday { border-color: var(--holiday); }
+  .event .tag { display: inline-block; font-size: 0.75rem; color: var(--muted); margin-left: 6px; }
+  .none { color: var(--muted); font-size: 0.9rem; }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .legend span::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-left: 5px;
+    vertical-align: middle;
+  }
+  .legend .h::before { background: var(--holiday); }
+  .legend .c::before { background: var(--cultural); border-radius: 50%; }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Credit footer */
+  .footer-bottom {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border, #ddd5c9);
+    color: var(--muted, #a29a90);
+    font-size: .7rem;
+    line-height: 1.7;
+    text-align: center;
+  }
+  .footer-bottom .heart,
+  .footer-bottom .coffee {
+    display: inline-block;
+    font-size: 1em;
+    line-height: 1;
+    transform-origin: center;
+  }
+  .footer-bottom .heart {
+    animation: heart-beat 1.8s ease-in-out infinite;
+  }
+  @keyframes heart-beat {
+    0%, 100% { transform: scale(1); }
+    15%      { transform: scale(1.25); }
+    30%      { transform: scale(1); }
+    45%      { transform: scale(1.15); }
+  }
+  .footer-bottom .coffee {
+    animation: coffee-bob 2.6s ease-in-out infinite;
+  }
+  @keyframes coffee-bob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    40%      { transform: translateY(-2px) rotate(-6deg); }
+    70%      { transform: translateY(0) rotate(3deg); }
+  }
+  .footer-bottom .credit-name {
+    color: var(--text, #242321);
+    font-weight: 700;
+  }
+  .github-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-left: 2px;
+    color: var(--text, #242321);
+    background: var(--accent-soft, #f7f2e9);
+    border: 1px solid var(--border, #ddd5c9);
+    border-radius: 50%;
+    text-decoration: none;
+    transition: transform .22s ease, background .22s ease,
+                color .22s ease, border-color .22s ease;
+  }
+  .github-link:hover {
+    transform: scale(1.12) translateY(-1px);
+    background: var(--accent, #dc8427);
+    color: #fff;
+    border-color: var(--accent, #dc8427);
+  }
+  .github-link:active {
+    transform: scale(0.94);
+  }
+  .github-link:focus-visible {
+    outline: 2px solid var(--accent, #dc8427);
+    outline-offset: 3px;
+  }
+  .github-link svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+  @media (max-width: 400px) {
+    .footer-bottom { font-size: .65rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .footer-bottom .heart,
+    .footer-bottom .coffee {
+      animation: none !important;
+    }
+    .github-link {
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="top">
+      <button class="nav" id="prev" aria-label="ماه قبل"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polyline points="9 6 15 12 9 18"/></svg></button>
+      <div class="title">
+        <div class="month" id="month"></div>
+        <div class="year" id="year"></div>
+      </div>
+      <button class="nav" id="next" aria-label="ماه بعد"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polyline points="15 6 9 12 15 18"/></svg></button>
+    </div>
+
+    <div class="weekdays">
+      <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span class="fri">ج</span>
+    </div>
+    <div class="grid" id="grid"></div>
+
+    <div class="legend">
+      <span class="h">تعطیل رسمی</span>
+      <span class="c">مناسبت فرهنگی</span>
+    </div>
+
+    <div class="details" id="details"></div>
+
+    <div class="footer">
+      <button class="btn" id="todayBtn">امروز</button>
+      <button class="btn" id="themeBtn">حالت تیره</button>
+    </div>
+    <div class="footer-bottom" dir="ltr" lang="en">
+      <span>Created with</span>
+      <span class="heart" role="img" aria-label="love">❤️</span>
+      <span>&amp;</span>
+      <span class="coffee" role="img" aria-label="coffee">☕</span>
+      <span>by</span>
+      <span class="credit-name">Hossein Seyed Bagheri</span>
+      <a
+        class="github-link"
+        href="https://github.com/hosseinb1111/persian-calendar"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="View project on GitHub"
+        title="View on GitHub"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
+             aria-hidden="true" focusable="false">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+    </div>
+  </main>
+
+<script>
+  const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+  const toFa = n => String(n).replace(/\d/g, c => FA_DIGITS[c]);
+
+  // Persian (Solar Hijri) month names, indexed 1-12.
+  const MONTHS = ['', 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+                  'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+  const WEEKDAYS_LONG = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+
+  // Fixed-date occasions on the Persian calendar, keyed "month-day".
+  // holiday: true = official public holiday (تعطیل رسمی); false = cultural occasion.
+  // Lunar-calendar occasions (Ramadan, Eids, Ashura, etc.) move each year and are not included.
+  const OCCASIONS = {
+    '1-1':   { title: 'نوروز، آغاز سال نو', holiday: true },
+    '1-2':   { title: 'نوروز', holiday: true },
+    '1-3':   { title: 'نوروز', holiday: true },
+    '1-12':  { title: 'روز جمهوری اسلامی', holiday: true },
+    '1-13':  { title: 'سیزده به‌در', holiday: true },
+    '7-16':  { title: 'جشن مهرگان', holiday: false },
+    '9-30':  { title: 'شب یلدا', holiday: false },
+    '11-10': { title: 'جشن سده', holiday: false },
+    '11-22': { title: 'پیروزی انقلاب اسلامی', holiday: true },
+    '2-5':   { title: 'تاجگذاری رضاشاه پهلوی (۱۳۰۵)', holiday: false },
+    '2-12':  { title: 'روز معلم', holiday: false },
+    '2-25':  { title: 'روز بزرگداشت فردوسی', holiday: false },
+    '4-17':  { title: 'روز خبرنگار', holiday: false },
+    '8-4':   { title: 'تاجگذاری محمدرضاشاه پهلوی و فرح دیبا (۱۳۴۶)', holiday: false },
+    '8-13':  { title: 'روز دانشجو', holiday: false },
+    '12-29': { title: 'ملی شدن صنعت نفت', holiday: true }
+  };
+
+  const enPersian = new Intl.DateTimeFormat('en-u-ca-persian', { year: 'numeric', month: 'numeric', day: 'numeric' });
+  const gregFmt = new Intl.DateTimeFormat('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  function persianParts(date) {
+    const p = {};
+    for (const part of enPersian.formatToParts(date)) p[part.type] = part.value;
+    return { y: +p.year, m: +p.month, d: +p.day };
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() &&
+           a.getDate() === b.getDate();
+  }
+
+  function occasionFor(date) {
+    const p = persianParts(date);
+    return OCCASIONS[p.m + '-' + p.d] || null;
+  }
+
+  function monthStart(date) {
+    const p = persianParts(date);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate() - (p.d - 1));
+  }
+
+  function nextMonthStart(first) {
+    const cur = persianParts(first).m;
+    const d = new Date(first);
+    do { d.setDate(d.getDate() + 1); } while (persianParts(d).m === cur);
+    return d;
+  }
+
+  function prevMonthStart(first) {
+    const cur = persianParts(first).m;
+    const d = new Date(first);
+    d.setDate(d.getDate() - 1);
+    const prevMonth = persianParts(d).m;
+    while (true) {
+      const earlier = new Date(d);
+      earlier.setDate(earlier.getDate() - 1);
+      if (persianParts(earlier).m !== prevMonth) break;
+      d.setDate(d.getDate() - 1);
+    }
+    return d;
+  }
+
+  const today = new Date();
+  let first = monthStart(today);
+  let selected = new Date(today);
+
+  const grid = document.getElementById('grid');
+  const monthEl = document.getElementById('month');
+  const yearEl = document.getElementById('year');
+  const detailsEl = document.getElementById('details');
+
+  function showDetails(date) {
+    selected = new Date(date);
+    const p = persianParts(date);
+    const weekday = WEEKDAYS_LONG[date.getDay()];
+    const occ = occasionFor(date);
+
+    let html = '<div class="date">' + weekday + '، ' + toFa(p.d) + ' ' + MONTHS[p.m] + ' ' + toFa(p.y) + '</div>';
+    html += '<div class="greg">' + gregFmt.format(date) + '</div>';
+    if (occ) {
+      html += '<div class="event' + (occ.holiday ? ' holiday' : '') + '">' +
+              '<span class="tag">' + (occ.holiday ? 'تعطیل' : 'مناسبت') + '</span>' + occ.title + '</div>';
+    } else {
+      html += '<div class="none">مناسبتی برای این روز ثبت نشده است.</div>';
+    }
+    detailsEl.innerHTML = html;
+  }
+
+  function render() {
+    const p = persianParts(first);
+    monthEl.textContent = MONTHS[p.m];
+    yearEl.textContent = toFa(p.y);
+    grid.innerHTML = '';
+
+    const offset = (first.getDay() + 1) % 7;
+    for (let i = 0; i < offset; i++) {
+      const blank = document.createElement('div');
+      blank.className = 'cell empty';
+      grid.appendChild(blank);
+    }
+
+    let date = new Date(first);
+    while (persianParts(date).m === p.m) {
+      const cell = document.createElement('button');
+      cell.className = 'cell';
+      cell.type = 'button';
+      const dayDate = new Date(date);
+      cell.textContent = toFa(persianParts(dayDate).d);
+      const occ = occasionFor(dayDate);
+      if (dayDate.getDay() === 5) cell.classList.add('fri');
+      if (occ && occ.holiday) cell.classList.add('holiday');
+      if (occ && !occ.holiday) cell.classList.add('cultural');
+      if (sameDay(dayDate, today)) cell.classList.add('today');
+      if (sameDay(dayDate, selected)) cell.classList.add('selected');
+      cell.setAttribute('aria-label', gregFmt.format(dayDate) + (occ ? ' - ' + occ.title : ''));
+      cell.addEventListener('click', () => { showDetails(dayDate); render(); });
+      grid.appendChild(cell);
+      date = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    }
+
+    showDetails(persianParts(selected).m === p.m ? selected : first);
+  }
+
+  document.getElementById('next').addEventListener('click', () => { first = nextMonthStart(first); render(); });
+  document.getElementById('prev').addEventListener('click', () => { first = prevMonthStart(first); render(); });
+  document.getElementById('todayBtn').addEventListener('click', () => {
+    first = monthStart(new Date());
+    selected = new Date(today);
+    render();
+  });
+
+  // Theme: follows the system by default; manual choice is remembered per viewer.
+  const root = document.documentElement;
+  const themeBtn = document.getElementById('themeBtn');
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function applyTheme(theme) {
+    root.setAttribute('data-theme', theme);
+    themeBtn.textContent = theme === 'dark' ? 'حالت روشن' : 'حالت تیره';
+  }
+
+  let saved = null;
+  try { saved = localStorage.getItem('persian-calendar-theme'); } catch (e) {}
+  applyTheme(saved || (systemDark.matches ? 'dark' : 'light'));
+
+  themeBtn.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem('persian-calendar-theme', next); } catch (e) {}
+  });
+
+  render();
+</script>
+</body>
+</html>
